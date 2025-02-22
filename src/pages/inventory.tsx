@@ -12,6 +12,7 @@ import {
 import { ItemFormDialog } from "@/components/inventory/item-form-dialog";
 import { StockAdjustmentDialog } from "@/components/inventory/stock-adjustment-dialog";
 import { BarcodeScannerDialog } from "@/components/inventory/barcode-scanner-dialog";
+import { ReceiptDialog } from "@/components/inventory/receipt-dialog";
 import { Plus, Search, Scan, Edit, BarChart2 } from "lucide-react";
 import { useState } from "react";
 import { Item } from "@/types/inventory";
@@ -54,6 +55,8 @@ export default function Inventory() {
   const [isStockAdjustmentOpen, setIsStockAdjustmentOpen] = useState(false);
   const [isBarcodeDialogOpen, setIsBarcodeDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
 
   const filteredItems = items.filter(
     (item) =>
@@ -94,6 +97,24 @@ export default function Inventory() {
       return item;
     });
     setItems(updatedItems);
+
+    // Generate receipt for stock adjustment
+    if (data.type === "add") {
+      setReceiptData({
+        id: `REC-${Date.now()}`,
+        date: new Date(),
+        items: [
+          {
+            name: selectedItem.name,
+            quantity: data.quantity,
+            unit: selectedItem.unit,
+          },
+        ],
+        totalItems: data.quantity,
+        receivedBy: "John Doe", // This would come from the logged-in user
+      });
+      setIsReceiptDialogOpen(true);
+    }
   };
 
   const handleBarcodeScan = (code: string) => {
@@ -107,15 +128,15 @@ export default function Inventory() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Inventory</h1>
+        <h1 className="text-3xl font-bold">Inventaris</h1>
         <div className="flex gap-2">
           <Button onClick={() => setIsBarcodeDialogOpen(true)}>
             <Scan className="h-4 w-4 mr-2" />
-            Scan Barcode
+            Pindai Barcode
           </Button>
           <Button onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Item
+            Tambah Item
           </Button>
         </div>
       </div>
@@ -125,7 +146,7 @@ export default function Inventory() {
           <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search items..."
+              placeholder="Cari item..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8"
@@ -137,14 +158,14 @@ export default function Inventory() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Current Stock</TableHead>
+                <TableHead>Kode</TableHead>
+                <TableHead>Nama</TableHead>
+                <TableHead>Kategori</TableHead>
+                <TableHead>Stok Saat Ini</TableHead>
                 <TableHead>Unit</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Expiry Date</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Lokasi</TableHead>
+                <TableHead>Tanggal Kadaluarsa</TableHead>
+                <TableHead>Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -182,7 +203,7 @@ export default function Inventory() {
                           }}
                         >
                           <Edit className="h-4 w-4 mr-2" />
-                          Edit
+                          Ubah
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
@@ -191,7 +212,7 @@ export default function Inventory() {
                           }}
                         >
                           <BarChart2 className="h-4 w-4 mr-2" />
-                          Adjust Stock
+                          Sesuaikan Stok
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -230,6 +251,14 @@ export default function Inventory() {
         onOpenChange={setIsBarcodeDialogOpen}
         onScan={handleBarcodeScan}
       />
+
+      {receiptData && (
+        <ReceiptDialog
+          open={isReceiptDialogOpen}
+          onOpenChange={setIsReceiptDialogOpen}
+          receiptData={receiptData}
+        />
+      )}
     </div>
   );
 }

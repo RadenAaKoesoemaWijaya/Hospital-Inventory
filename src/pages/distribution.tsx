@@ -16,10 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, TruckIcon } from "lucide-react";
+import { Search, TruckIcon, Calendar } from "lucide-react";
 import { useState } from "react";
 import { Distribution } from "@/types/inventory";
 import { Input } from "@/components/ui/input";
+import { ScheduleDialog } from "@/components/distribution/schedule-dialog";
+import { ProofOfDeliveryDialog } from "@/components/distribution/proof-of-delivery-dialog";
 
 const mockDistributions: Distribution[] = [
   {
@@ -53,6 +55,10 @@ export default function Distribution() {
   const [distributions] = useState<Distribution[]>(mockDistributions);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+  const [isPodDialogOpen, setIsPodDialogOpen] = useState(false);
+  const [selectedDistribution, setSelectedDistribution] =
+    useState<Distribution | null>(null);
 
   const filteredDistributions = distributions.filter((distribution) => {
     const matchesSearch = distribution.requestId
@@ -66,7 +72,7 @@ export default function Distribution() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Distribution</h1>
+        <h1 className="text-3xl font-bold">Distribusi</h1>
       </div>
 
       <Card className="p-4">
@@ -74,7 +80,7 @@ export default function Distribution() {
           <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by request ID..."
+              placeholder="Cari berdasarkan ID permintaan..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8"
@@ -82,13 +88,13 @@ export default function Distribution() {
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder="Filter berdasarkan status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="preparing">Preparing</SelectItem>
-              <SelectItem value="in-transit">In Transit</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="all">Semua Status</SelectItem>
+              <SelectItem value="preparing">Persiapan</SelectItem>
+              <SelectItem value="in-transit">Dalam Perjalanan</SelectItem>
+              <SelectItem value="delivered">Terkirim</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -97,12 +103,12 @@ export default function Distribution() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Distribution ID</TableHead>
-                <TableHead>Request ID</TableHead>
+                <TableHead>ID Distribusi</TableHead>
+                <TableHead>ID Permintaan</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Distribution Date</TableHead>
-                <TableHead>Delivery Note</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Tanggal Distribusi</TableHead>
+                <TableHead>Catatan Pengiriman</TableHead>
+                <TableHead>Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -128,10 +134,34 @@ export default function Distribution() {
                   <TableCell>{distribution.distributionDate}</TableCell>
                   <TableCell>{distribution.deliveryNote}</TableCell>
                   <TableCell>
-                    <Button variant="outline" size="sm">
-                      <TruckIcon className="h-4 w-4 mr-2" />
-                      Update Status
-                    </Button>
+                    <div className="flex gap-2">
+                      {distribution.status === "preparing" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDistribution(distribution);
+                            setIsScheduleDialogOpen(true);
+                          }}
+                        >
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Atur Jadwal
+                        </Button>
+                      )}
+                      {distribution.status === "in-transit" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDistribution(distribution);
+                            setIsPodDialogOpen(true);
+                          }}
+                        >
+                          <TruckIcon className="h-4 w-4 mr-2" />
+                          Konfirmasi Pengiriman
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -139,6 +169,34 @@ export default function Distribution() {
           </Table>
         </div>
       </Card>
+
+      <ScheduleDialog
+        open={isScheduleDialogOpen}
+        onOpenChange={setIsScheduleDialogOpen}
+        onSubmit={(data) => {
+          console.log("Schedule data:", data);
+          // Here you would update the distribution with the schedule
+        }}
+      />
+
+      {selectedDistribution && (
+        <ProofOfDeliveryDialog
+          open={isPodDialogOpen}
+          onOpenChange={setIsPodDialogOpen}
+          onSubmit={(data) => {
+            console.log("POD data:", data);
+            // Here you would update the distribution with the POD
+          }}
+          deliveryDetails={{
+            id: selectedDistribution.id,
+            date: new Date(),
+            items: selectedDistribution.items.map((item) => ({
+              name: `Item ${item.itemId}`,
+              quantity: item.quantity,
+            })),
+          }}
+        />
+      )}
     </div>
   );
 }
